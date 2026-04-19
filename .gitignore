@@ -1,0 +1,24 @@
+# Data directories
+data/synthetic/
+data/htk_output/
+data/lmdb_output/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+
+# Model outputs
+output/
+
+# Environment
+.env
+venv/
+
+# OS
+.DS_Store
+*.swp

@@ -7,7 +7,10 @@ from typing import Dict, Optional, Tuple
 import torch
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 
-from ..utils.memory_monitor import MemoryMonitor
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from utils.memory_monitor import MemoryMonitor
 
 logger = logging.getLogger(__name__)
 

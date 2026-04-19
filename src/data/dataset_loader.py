@@ -65,14 +65,12 @@ class HungarianDatasetLoader:
 
     def load_dataset(
         self,
-        dataset_name: str,
-        trust_remote_code: bool = True
+        dataset_name: str
     ) -> datasets.DatasetDict:
         """Load a single Hungarian dataset.
 
         Args:
             dataset_name: One of 'common_voice', 'voxpopuli', 'fleurs'.
-            trust_remote_code: Whether to trust remote code.
 
         Returns:
             HuggingFace DatasetDict with train/validation splits.
@@ -84,13 +82,16 @@ class HungarianDatasetLoader:
         logger.info(f"Loading {dataset_name} dataset...")
 
         # Load dataset
-        raw_dataset = datasets.load_dataset(
-            config["name"],
-            config["config_name"],
-            split=config["split"],
-            trust_remote_code=trust_remote_code,
-            cache_dir=str(self.cache_dir / dataset_name)
-        )
+        try:
+            raw_dataset = datasets.load_dataset(
+                config["name"],
+                config["config_name"],
+                split=config["split"],
+                cache_dir=str(self.cache_dir / dataset_name)
+            )
+        except Exception as e:
+            logger.warning(f"Failed to load {dataset_name}: {e}")
+            raise
 
         # Rename columns
         if config["audio_column"] != "audio":
