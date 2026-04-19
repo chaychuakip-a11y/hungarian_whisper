@@ -1,0 +1,11 @@
+transformers==4.36.0
+datasets==2.16.0
+peft==0.7.0
+accelerate==0.25.0
+librosa==0.10.1
+evaluate==0.4.1
+scipy==1.11.4
+soundfile==0.12.1
+pyyaml==6.0.1
+torch==2.1.0
+bitsandbytes==0.41.3

@@ -1,0 +1,43 @@
+model:
+  name: "openai/whisper-large-v2"
+  int8: true
+  lora:
+    r: 16
+    lora_alpha: 32
+    target_modules: ["q_proj", "v_proj"]
+    lora_dropout: 0.05
+
+data:
+  datasets:
+    - name: "mozilla-foundation/common_voice"
+      subset: "hu"
+    - name: "facebook/voxpopuli"
+      language: "hu"
+    - name: "google/fleurs"
+      language: "hu_hu"
+  filters:
+    min_duration: 1.0
+    max_duration: 25.0
+  text_normalization:
+    keep_hungarian_chars: true
+  train_split: 0.9
+
+training:
+  output_dir: "./output/checkpoints"
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 1e-3
+  num_train_epochs: 3
+  fp16: false
+  bf16: true
+  logging_steps: 100
+  save_steps: 500
+  eval_steps: 500
+  warmup_steps: 100
+  dataloader_num_workers: 4
+  group_by_length: true
+
+htk:
+  output_dir: "./data/htk_output"
+  wav_scp: "wav.scp"
+  labels_mlf: "labels.mlf"

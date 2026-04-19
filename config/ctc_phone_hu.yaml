@@ -1,0 +1,122 @@
+# Hungarian Phone Set Configuration for CTC Training
+# Based on Hungarian phoneme inventory
+
+dataset_cfg_path: /path/to/hungarian_ctc_data.json
+
+chunk_size: 10000
+
+save_filename: /path/to/output/hu_phone_chunk10000.bin
+
+base_lang: hungarian
+
+lang_ratio:
+  hungarian: 1.0
+
+# Hungarian phone inventory (44 phones)
+phones:
+  # Vowels
+  - a
+  - a:
+  - e
+  - e:
+  - i
+  - i:
+  - o
+  - o:
+  - o:
+  - u
+  - u:
+  - u:
+  - y
+  - y:
+  - o:
+  - o:
+  - o:
+
+  # Consonants
+  - b
+  - c
+  - d
+  - dz
+  - dzs
+  - f
+  - g
+  - gy
+  - h
+  - j
+  - k
+  - l
+  - ly
+  - m
+  - n
+  - ny
+  - p
+  - q
+  - r
+  - s
+  - sz
+  - t
+  - ty
+  - v
+  - w
+  - x
+  - y
+  - z
+  - zs
+
+  # Special tokens
+  - <SIL>
+  - <SP>
+
+# Phone to index mapping (0 = blank for CTC)
+phone2idx:
+  <SIL>: 1
+  <SP>: 2
+  a: 3
+  a:: 4
+  e: 5
+  e:: 6
+  i: 7
+  i:: 8
+  o: 9
+  o:: 10
+  o:: 11
+  u: 12
+  u:: 13
+  u:: 14
+  y: 15
+  y:: 16
+  o:: 17
+  o:: 18
+  o:: 19
+  b: 20
+  c: 21
+  d: 22
+  dz: 23
+  dzs: 24
+  f: 25
+  g: 26
+  gy: 27
+  h: 28
+  j: 29
+  k: 30
+  l: 31
+  ly: 32
+  m: 33
+  n: 34
+  ny: 35
+  p: 36
+  q: 37
+  r: 38
+  s: 39
+  sz: 40
+  t: 41
+  ty: 42
+  v: 43
+  w: 44
+  x: 45
+  y: 46
+  z: 47
+  zs: 48
+
+num_phones: 48
