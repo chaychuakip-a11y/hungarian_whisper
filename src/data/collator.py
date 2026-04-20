@@ -98,10 +98,6 @@ class DataCollatorSpeechSeq2SeqWithPadding:
             -100
         )
 
-        # Handle attention mask for labels (remove it)
-        if "attention_mask" in labels_batch:
-            batched_labels["attention_mask"] = labels_batch["attention_mask"]
-
         return {
             "input_features": batched_input["input_features"],
             "labels": batched_labels

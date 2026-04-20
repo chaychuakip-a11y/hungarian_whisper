@@ -72,7 +72,7 @@ class LoRAWhisperModel:
 
         # Configure LoRA
         lora_config = LoraConfig(
-            task_type=TaskType.SEQ2SEQ_LM,
+            task_type=TaskType.SEQ_2_SEQ_LM,
             r=self.lora_r,
             lora_alpha=self.lora_alpha,
             target_modules=self.target_modules,

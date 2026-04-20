@@ -62,9 +62,11 @@ def create_training_arguments(
         logging_steps=logging_steps,
         save_steps=save_steps,
         eval_steps=eval_steps,
+        evaluation_strategy="steps",
+        save_strategy="steps",
         warmup_steps=warmup_steps,
         dataloader_num_workers=dataloader_num_workers,
-        group_by_length=group_by_length,
+        group_by_length=False,  # Disabled for custom dataset format
         remove_unused_columns=False,
         label_names=["labels"],
         predict_with_generate=True,
@@ -163,13 +165,10 @@ def train_whisper(
         callbacks=callbacks
     )
 
-    # Attach memory monitoring
-    trainer.add_callback(MemoryMonitorCallback(memory_monitor))
-
     # Log initial memory state
     memory_monitor.log_memory_stats("Before training")
 
-    # Train
+    # Train (without custom callback for now)
     logger.info("Starting training...")
     train_result = trainer.train()
 
