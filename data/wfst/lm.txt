@@ -1,0 +1,8 @@
+köszönöm 0.1
+szépen 0.05
+üdvözöllek 0.03
+hogyan 0.02
+vagy 0.05
+mi 0.08
+ez 0.1
+egy 0.07

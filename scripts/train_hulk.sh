@@ -14,22 +14,26 @@ echo "========================================"
 echo "Hungarian Whisper Training (Hulk Framework)"
 echo "========================================"
 
-# Check if Hulk framework exists
-if [ ! -d "$HULK_DIR" ]; then
-    echo "ERROR: Hulk framework not found at $HULK_DIR"
-    exit 1
-fi
+# Data directory (LMDB format)
+DATA_DIR="$PROJECT_DIR/data/hulk_lmdb"
+LMDB_PATH="$DATA_DIR/hungarian_lmdb"
+CHUNK_PATH="$DATA_DIR/hungarian_chunk10000.bin"
+TRAIN_JSON="$DATA_DIR/hungarian_dataset.json"
+VALID_JSON="$DATA_DIR/hungarian_dataset.json"  # Use same file for validation
 
-# Create output directory
+# Model paths
+PRETRAINED_PATH="openai/whisper-small"
+
+# Output directory
 OUTPUT_DIR="$PROJECT_DIR/output/hulk_hungarian"
 mkdir -p "$OUTPUT_DIR"
 
 # Create configuration file for Hungarian
-cat > "$OUTPUT_DIR/whisper_train_hungarian.yaml" << 'EOF'
+cat > "$OUTPUT_DIR/whisper_train_hungarian.yaml" << EOF
 # @package _group_
 hydra:
   run:
-    dir: OUTPUT_DIR_PLACEHOLDER
+    dir: $OUTPUT_DIR/outputs
   job:
     name: hungarian_whisper
 
@@ -38,12 +42,12 @@ common:
   memory_efficient_fp16: false
   log_format: json
   log_interval: 10
-  tensorboard_logdir: tb
+  tensorboard_logdir: $OUTPUT_DIR/tb
   fp16_no_flatten_grads: false
   cudnn_benchmark: false
   cudnn_deterministic: false
   seed: 42
-  user_dir: USER_DIR_PLACEHOLDER
+  user_dir: $PROJECT_DIR
 
 checkpoint:
   save_interval: 1
@@ -57,7 +61,7 @@ task:
   max_sample_size: 1500
   feature_type: "fb80"
   use_poi: 0
-  chunk_seq_path: CHUNK_SEQ_PLACEHOLDER
+  chunk_seq_path: "$CHUNK_PATH"
 
 dataset:
   do_debug: false
@@ -71,8 +75,8 @@ dataset:
   validate_interval_updates: 5000
   disable_validation: false
 
-  train_subset: TRAIN_JSON_PLACEHOLDER
-  valid_subset: VALID_JSON_PLACEHOLDER
+  train_subset: "$TRAIN_JSON"
+  valid_subset: "$VALID_JSON"
   shuffle: true
   num_parts: 1
   num_blocks: 50
@@ -117,7 +121,7 @@ model:
   reset_optimizer: true
   reset_dataloader: true
 
-  from_pretrained: PRETRAINED_PLACEHOLDER
+  from_pretrained: "$PRETRAINED_PATH"
 
   n_audio_ctx: 1500
   n_audio_state: 1280
@@ -146,15 +150,71 @@ lora:
   merge_weights: false
 EOF
 
-echo "Configuration created: $OUTPUT_DIR/whisper_train_hungarian.yaml"
+echo "========================================="
+echo "Hulk Configuration Generated"
+echo "========================================="
+echo "Config: $OUTPUT_DIR/whisper_train_hungarian.yaml"
 echo ""
-echo "To run training:"
-echo "  1. Prepare LMDB data and chunk indices"
-echo "  2. Update paths in the config file"
-echo "  3. Run:"
+echo "Data paths:"
+echo "  LMDB: $LMDB_PATH"
+echo "  Chunk: $CHUNK_PATH"
+echo "  Train JSON: $TRAIN_JSON"
+echo "  Valid JSON: $VALID_JSON"
 echo ""
-echo "torchrun [DIST_ARGS] $HULK_DIR/hulk_cli/hydra_train.py \\"
+echo "Model: $PRETRAINED_PATH"
+echo ""
+echo "========================================="
+echo "USAGE INSTRUCTIONS"
+echo "========================================="
+echo ""
+echo "The YAML config has been generated with real paths."
+echo ""
+echo "To run training on the company cluster:"
+echo ""
+echo "  1. Copy the config to your job submission"
+echo "  2. Modify DIST_ARGS for your cluster setup"
+echo "  3. Submit using: bash submit_hu_ED.sh"
+echo ""
+echo "Or run manually on a GPU server:"
+echo "  cd $PROJECT_DIR"
+echo "  torchrun --nproc_per_node=8 $HULK_DIR/hulk_cli/hydra_train.py \\"
 echo "    --config-dir $OUTPUT_DIR \\"
 echo "    --config-name whisper_train_hungarian.yaml"
 echo ""
-echo "See $OUTPUT_DIR/whisper_train_hungarian.yaml for configuration details"
+echo "========================================="
+
+# Create a submit script for easy deployment
+cat > "$OUTPUT_DIR/submit_hu_ED.sh" << 'SUBMIT_EOF'
+#!/bin/bash
+# Submit Hungarian Whisper training job
+# Usage: bash submit_hu_ED.sh
+
+PROJECT_DIR="/home/lty/hungarian_whisper"
+HULK_DIR="/home/lty/am/whisper_ED/hulk"
+OUTPUT_DIR="$PROJECT_DIR/output/hulk_hungarian"
+
+# Cluster configuration
+# Adjust these for your cluster environment
+export MASTER_ADDR="localhost"
+export MASTER_PORT="29500"
+export WORLD_SIZE=1
+export RANK=0
+
+# Multi-GPU settings
+export NPROC_PER_NODE=8
+export NCCL_IB_DISABLE=0
+
+torchrun \
+    --master_addr=${MASTER_ADDR} \
+    --master_port=${MASTER_PORT} \
+    --nnodes=${WORLD_SIZE} \
+    --node_rank=${RANK} \
+    --nproc_per_node=${NPROC_PER_NODE} \
+    $HULK_DIR/hulk_cli/hydra_train.py \
+    --config-dir $OUTPUT_DIR \
+    --config-name whisper_train_hungarian.yaml \
+    distributed_training.ddp_backend=pytorch_ddp
+SUBMIT_EOF
+
+chmod +x "$OUTPUT_DIR/submit_hu_ED.sh"
+echo "Submit script: $OUTPUT_DIR/submit_hu_ED.sh"
