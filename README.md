@@ -1,6 +1,6 @@
 # Hungarian Whisper Fine-tuning Pipeline
 
-匈牙利语 Whisper 模型微调流水线，支持 CUDA 和 ROCm 双平台。
+匈牙利语 Whisper 模型微调流水线，支持 CUDA / ROCm 双平台。
 
 ## 目录结构
 
@@ -10,159 +10,149 @@ hungarian_whisper/
 │   ├── config.yaml            # CUDA/NVIDIA 配置
 │   ├── config_rocm.yaml       # ROCm/AMD 配置
 │   └── ctc_phone_hu.yaml     # 匈牙利语音素配置
-├── src/
+├── src/                        # 源代码 (HuggingFace Trainer)
 │   ├── data/                  # 数据处理
-│   │   ├── hungarian_normalizer.py   # 匈牙利语文本标准化
-│   │   ├── htk_exporter.py           # HTK 格式导出
-│   │   ├── htk_dataloader.py         # HTK 数据加载
-│   │   ├── dataset_loader.py         # HuggingFace 数据集加载
-│   │   ├── lmdb_preparator.py       # LMDB 格式准备
-│   │   └── collator.py              # 数据整理器
-│   ├── model/
-│   │   └── lora_whisper.py          # LoRA 模型配置
-│   ├── training/
-│   │   ├── trainer.py               # 训练循环
-│   │   └── evaluation.py           # WER 评估
-│   └── utils/
-│       ├── lora_layers.py          # LoRA 层实现
-│       └── memory_monitor.py        # VRAM 监控
+│   ├── model/                 # 模型
+│   ├── training/              # 训练
+│   └── utils/                 # 工具
 ├── scripts/
-│   ├── 01_install_deps.sh          # 安装依赖
-│   ├── 02_prepare_data.sh          # 数据准备
-│   ├── 03_train.sh                 # CUDA 训练
-│   ├── 03_train_rocm.sh            # ROCm 训练
-│   ├── 04_evaluate.sh              # 评估
-│   ├── run_pipeline.py             # 一键运行完整流程
-│   ├── train_rocm_simple.py        # ROCm 简化训练
-│   └── train_rocm_full.py          # ROCm 完整训练
-├── data/                          # 数据目录
-├── output/                        # 输出目录
+│   ├── train_hulk.sh          # Hulk 框架训练配置
+│   ├── prepare_hulk_data.py   # Hulk 数据准备
+│   ├── train_rocm_simple.py   # ROCm 快速训练
+│   └── ...
+├── data/                      # 数据目录
+├── output/                    # 输出目录
 └── Hungarian_Whisper_Tuning_Report.md
 ```
 
-## 快速开始
+## 三种训练方式
 
-### 1. 安装依赖
-
-**CUDA (NVIDIA):**
+### 1. HuggingFace Trainer (已验证 ROCm)
 ```bash
-bash scripts/01_install_deps.sh
+python scripts/train_rocm_simple.py   # 快速验证
 ```
 
-**ROCm (AMD):**
-```bash
-pip install torch --index-url https://download.pytorch.org/whl/rocm5.7
-pip install transformers datasets peft accelerate librosa evaluate scipy soundfile pyyaml jiwer tensorboard
-```
-
-### 2. 数据准备
-
-```bash
-# 生成合成数据测试
-python scripts/test_pipeline.py --num_samples 500
-
-# 或准备真实数据
-bash scripts/02_prepare_data.sh
-```
-
-### 3. 训练
-
-**CUDA 训练:**
+### 2. CUDA 训练
 ```bash
 bash scripts/03_train.sh
 ```
 
-**ROCm 训练 (推荐):**
+### 3. Hulk 框架训练 (基于公司框架)
 ```bash
-python scripts/train_rocm_simple.py   # 快速验证
-python scripts/train_rocm_full.py     # 完整 LoRA 训练
+# 准备数据
+python scripts/prepare_hulk_data.py --output_dir ./data/hulk_lmdb --generate_synthetic
+
+# 生成配置
+bash scripts/train_hulk.sh
+
+# 运行训练 (需要 Hulk 框架环境)
+torchrun ... $HULK_DIR/hulk_cli/hydra_train.py --config-dir ./output/hulk_hungarian ...
 ```
 
-### 4. 评估
+## Hulk 框架配置
 
-```bash
-bash scripts/04_evaluate.sh
-```
-
-## 配置文件
-
-### config.yaml (CUDA)
+### YAML 配置示例
 ```yaml
 model:
-  name: "openai/whisper-large-v2"
-  int8: true                    # NVIDIA 支持 INT8
-  lora:
-    r: 16
-    lora_alpha: 32
-    target_modules: ["q_proj", "v_proj"]
+  _name: model_parallel_whisper_distil_dec
+  from_pretrained: /path/to/pretrained.pt
 
-training:
-  per_device_train_batch_size: 4
-  gradient_accumulation_steps: 4
-  bf16: true
-```
+  n_audio_ctx: 1500
+  n_audio_state: 1280
+  n_text_state: 1280
+  n_audio_layer: 32
+  n_text_layer: 4
 
-### config_rocm.yaml (ROCm)
-```yaml
-model:
-  name: "openai/whisper-large-v2"
-  int8: false                   # AMD 不支持 INT8
-  lora:
-    r: 16
-    lora_alpha: 32
+lora:
+  apply_lora: true
+  lora_rank: 16
+  lora_alpha: 128
+  lora_dropout: 0.05
+  adapt_q: true
+  adapt_k: true
+  adapt_v: true
+  adapt_o: true
 
-training:
-  per_device_train_batch_size: 2  # 降低 batch size
-  bf16: true
+task:
+  _name: multilingual_asr_task
+  feature_type: "fb80"
+  chunk_seq_path: /path/to/chunk.bin
+
+dataset:
+  train_subset: /path/to/train.json
+  batch_size: 512
+  max_tokens: 4096
 ```
 
 ## 数据格式
 
+### Hulk LMDB 格式
+```
+data/hulk_lmdb/
+├── hungarian_lmdb/           # LMDB 数据库
+├── hungarian_chunk10000.bin  # Chunk 索引
+├── hungarian_dataset.json    # 数据集描述
+└── phone_dict.json          # 音素字典
+```
+
 ### HTK 格式
-
-**wav.scp:**
 ```
-sample_000001 /path/to/audio_001.wav
-sample_000002 /path/to/audio_002.wav
+data/htk_output/
+├── wav.scp                  # 音频路径列表
+└── labels.mlf              # Master Label File
 ```
-
-**labels.mlf:**
-```shell
-#!MLF!#
-"*/sample_000001.lab"
-köszönöm
-szépen
-üdvözöllek
-```
-
-## ROCm 支持
-
-| 组件 | CUDA (NVIDIA) | ROCm (AMD) |
-|------|---------------|------------|
-| PyTorch | torch (CUDA) | torch+rocm5.7 |
-| INT8 量化 | bitsandbytes | 不支持 |
-| BF16/FP16 | ✅ | ✅ |
-| LoRA | ✅ | ✅ |
-
-### ROCm 验证结果
-- GPU: AMD Radeon RX 7900 XTX (25.75GB)
-- 模型: whisper-small
-- VRAM 使用: ~3.4GB
-- 状态: ✅ 已验证
 
 ## 匈牙利语处理
 
-### 有效字符
-```
-aáäbcdeééfghiíjkloóöőpqrstuúüűvwxyz
-AÁÄBCDEÉÉFGHIÍJKLOÓÖŐPQRSTUÚÜŰVWXYZ
+### 音素集合 (48 phones)
+```python
+HUNGARIAN_PHONES = [
+    '<SIL>', '<SP>',
+    'a', 'e', 'i', 'o', 'u', 'y',          # Vowels
+    'á', 'é', 'í', 'ó', 'ö', 'ő', 'ú', 'ü', 'ű',  # Long vowels
+    'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm',
+    'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x', 'z',  # Consonants
+    'cs', 'dz', 'dzs', 'gy', 'ly', 'ny', 'sz', 'ty', 'zs'  # Digraphs
+]
 ```
 
-### 文本标准化规则
-1. 缩写扩展: "kb." → "körülbelül"
-2. 数字转换: "123" → "százhuszonhárom"
-3. 标点过滤: 仅保留 . , ? ! : - ' " ( )
-4. 字符过滤: 移除非匈牙利语字符
+## 平台支持
+
+| 组件 | CUDA (NVIDIA) | ROCm (AMD) |
+|------|---------------|-------------|
+| PyTorch | ✅ torch (CUDA) | ✅ torch+rocm5.7 |
+| INT8 量化 | ✅ bitsandbytes | ❌ 不支持 |
+| BF16/FP16 | ✅ | ✅ |
+| LoRA | ✅ | ✅ |
+| Hulk 框架 | ✅ | ✅ |
+
+### ROCm 验证结果
+- GPU: AMD Radeon RX 7900 XTX (25.75GB)
+- VRAM 使用: ~3.4GB
+- 状态: ✅ 已验证
+
+## 快速开始
+
+### ROCm (推荐)
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/rocm5.7
+pip install transformers datasets peft accelerate librosa evaluate scipy soundfile pyyaml jiwer tensorboard
+
+python scripts/train_rocm_simple.py
+```
+
+### CUDA
+```bash
+bash scripts/01_install_deps.sh
+bash scripts/02_prepare_data.sh
+bash scripts/03_train.sh
+```
+
+### Hulk 框架 (需要公司环境)
+```bash
+python scripts/prepare_hulk_data.py --output_dir ./data/hulk_lmdb --generate_synthetic
+bash scripts/train_hulk.sh
+```
 
 ## 依赖
 

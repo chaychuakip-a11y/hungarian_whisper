@@ -1,7 +1,9 @@
-# Data directories
+# Data directories (large binary files)
 data/synthetic/
 data/htk_output/
 data/lmdb_output/
+data/hulk_lmdb/*.lmdb
+data/hulk_lmdb/*_lock
 
 # Python cache
 __pycache__/
@@ -14,6 +16,8 @@ __pycache__/
 
 # Model outputs
 output/
+*.pt
+*.pth
 
 # Environment
 .env
