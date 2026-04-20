@@ -1,0 +1,56 @@
+# ROCm Configuration for AMD GPU Training
+# Based on config.yaml with adjustments for AMD architecture
+
+model:
+  name: "openai/whisper-large-v2"
+  int8: false                    # bitsandbytes INT8 not supported on ROCm
+  use_flash_attention: true     # Use Flash Attention if available
+  lora:
+    r: 16
+    lora_alpha: 32
+    target_modules: ["q_proj", "v_proj"]
+    lora_dropout: 0.05
+
+# ROCm-specific settings
+rocm:
+  enabled: true
+  gpu_arch: "gfx1100"           # RX 7900 XTX / Navi 31
+  memory_fraction: 0.90         # Reserve some VRAM for system
+  conv_threshold: 256            #GEMM threshold for MIOPEN
+
+data:
+  datasets:
+    - name: "mozilla-foundation/common_voice"
+      subset: "hu"
+    - name: "facebook/voxpopuli"
+      language: "hu"
+    - name: "google/fleurs"
+      language: "hu_hu"
+  filters:
+    min_duration: 1.0
+    max_duration: 25.0
+  text_normalization:
+    keep_hungarian_chars: true
+  train_split: 0.9
+
+training:
+  output_dir: "./output/checkpoints"
+  per_device_train_batch_size: 2    # Reduced for ROCm memory
+  gradient_accumulation_steps: 8     # Higher accumulation for effective batch
+  effective_batch_size: 16           # 2 * 8 = 16
+  learning_rate: 1e-3
+  num_train_epochs: 3
+  fp16: false
+  bf16: true                         # Use BF16 on ROCm
+  logging_steps: 100
+  save_steps: 500
+  eval_steps: 500
+  warmup_steps: 100
+  dataloader_num_workers: 4
+  group_by_length: true
+  max_vram_gb: 24                    # 24GB VRAM target
+
+htk:
+  output_dir: "./data/htk_output"
+  wav_scp: "wav.scp"
+  labels_mlf: "labels.mlf"

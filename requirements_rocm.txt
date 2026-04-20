@@ -1,0 +1,19 @@
+# Requirements for ROCm (AMD GPU) training
+# Install with: pip install -r requirements_rocm.txt
+
+# PyTorch ROCm build (gfx1100 = RX 7900 XTX)
+--index-url https://download.pytorch.org/whl/rocm5.7
+torch>=2.1.0
+
+transformers==4.36.0
+datasets==2.16.0
+peft==0.7.0
+accelerate==0.25.0
+librosa==0.10.1
+evaluate==0.4.1
+scipy==1.11.4
+soundfile==0.12.1
+pyyaml==6.0.1
+
+# Note: bitsandbytes INT8 quantization may not work with ROCm
+# For ROCm, consider using ROCM's MIGraphX or falling back to FP16
