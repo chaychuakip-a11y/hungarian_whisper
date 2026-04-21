@@ -1,0 +1,141 @@
+# whisper_ctc Hungarian Training Configuration
+# For use with whisper_ctc framework
+
+# Model configuration
+model:
+  name: "openai/whisper-small"
+  num_phones: 48
+  encoder_dim: 768
+  decoder_dim: 768
+
+# CTC phone configuration (Hungarian)
+phones:
+  - '<SIL>'
+  - '<SP>'
+  - 'a'
+  - 'a:'
+  - 'e'
+  - 'e:'
+  - 'i'
+  - 'i:'
+  - 'o'
+  - 'o:'
+  - 'o:'
+  - 'u'
+  - 'u:'
+  - 'u:'
+  - 'y'
+  - 'y:'
+  - 'o:'
+  - 'o:'
+  - 'o:'
+  - 'b'
+  - 'c'
+  - 'd'
+  - 'dz'
+  - 'dzs'
+  - 'f'
+  - 'g'
+  - 'gy'
+  - 'h'
+  - 'j'
+  - 'k'
+  - 'l'
+  - 'ly'
+  - 'm'
+  - 'n'
+  - 'ny'
+  - 'p'
+  - 'q'
+  - 'r'
+  - 's'
+  - 'sz'
+  - 't'
+  - 'ty'
+  - 'v'
+  - 'w'
+  - 'x'
+  - 'y'
+  - 'z'
+  - 'zs'
+
+# Phone to index mapping (CTC blank=0)
+phone2idx:
+  '<blank>': 0
+  '<SIL>': 1
+  '<SP>': 2
+  'a': 3
+  'a:': 4
+  'e': 5
+  'e:': 6
+  'i': 7
+  'i:': 8
+  'o': 9
+  'o:': 10
+  'o:': 11
+  'u': 12
+  'u:': 13
+  'u:': 14
+  'y': 15
+  'y:': 16
+  'o:': 17
+  'o:': 18
+  'o:': 19
+  'b': 20
+  'c': 21
+  'd': 22
+  'dz': 23
+  'dzs': 24
+  'f': 25
+  'g': 26
+  'gy': 27
+  'h': 28
+  'j': 29
+  'k': 30
+  'l': 31
+  'ly': 32
+  'm': 33
+  'n': 34
+  'ny': 35
+  'p': 36
+  'q': 37
+  'r': 38
+  's': 39
+  'sz': 40
+  't': 41
+  'ty': 42
+  'v': 43
+  'w': 44
+  'x': 45
+  'y': 46
+  'z': 47
+  'zs': 48
+
+# Data paths (update these to match your setup)
+data:
+  lmdb_path: "./data/ctc_lmdb/hungarian_ctc_lmdb"
+  chunk_path: "./data/ctc_lmdb/hungarian_chunk10000.bin"
+  json_path: "./data/ctc_lmdb/hungarian_dataset.json"
+  phone_dict_path: "./data/ctc_lmdb/phone_dict.json"
+
+# Training hyperparameters
+training:
+  output_dir: "./output/checkpoints_ctc"
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 1e-3
+  num_train_epochs: 3
+  fp16: false
+  bf16: true
+  save_steps: 500
+  eval_steps: 500
+  warmup_steps: 100
+  max_steps: 10000
+
+# LoRA configuration
+lora:
+  apply_lora: true
+  r: 16
+  lora_alpha: 32
+  target_modules: ["q_proj", "v_proj"]
+  lora_dropout: 0.05
